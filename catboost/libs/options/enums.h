@@ -197,7 +197,8 @@ enum class EModelType {
     CatboostBinary,
     AppleCoreML,
     CPP,
-    Python
+    Python,
+    CSharp
 };
 
 enum class EFinalCtrComputationMode {

@@ -194,6 +194,7 @@ cdef extern from "catboost/libs/model/model.h":
     cdef EModelType EModelType_CoreML "EModelType::AppleCoreML"
     cdef EModelType EModelType_CPP "EModelType::CPP"
     cdef EModelType EModelType_Python "EModelType::Python"
+    cdef EModelType EModelType_CSharp "EModelType::CSharp"
 
     cdef void ExportModel(
         const TFullModel& model,
@@ -566,6 +567,8 @@ cdef class PyModelType:
             self.modelType = EModelType_Python
         elif model_type == 'cbm' or model_type == 'catboost':
             self.modelType = EModelType_Catboost
+        elif model_type == 'csharp':
+            self.modelType = EModelType_CSharp
         else:
             raise CatboostError("Unknown model type {}.".format(model_type))
 
