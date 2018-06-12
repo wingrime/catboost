@@ -1,77 +1,76 @@
-static inline TCatboostCPPExportModelCtrBaseHash CalcHash(TCatboostCPPExportModelCtrBaseHash a, TCatboostCPPExportModelCtrBaseHash b) {
+public static  TCatboostCPPExportModelCtrBaseHash CalcHash(TCatboostCPPExportModelCtrBaseHash a, TCatboostCPPExportModelCtrBaseHash b) {
     const static constexpr TCatboostCPPExportModelCtrBaseHash MAGIC_MULT = 0x4906ba494954cb65ull;
     return MAGIC_MULT * (a + MAGIC_MULT * b);
 }
 
-static inline TCatboostCPPExportModelCtrBaseHash CalcHash(
-    const std::vector<unsigned char>& binarizedFeatures,
-    const std::vector<int>& hashedCatFeatures,
-    const std::vector<int>& transposedCatFeatureIndexes,
-    const std::vector<TCatboostCPPExportBinFeatureIndexValue>& binarizedFeatureIndexes) {
+public static  TCatboostCPPExportModelCtrBaseHash CalcHash(
+    List<byte> binarizedFeatures,
+    List<int> hashedCatFeatures,
+    List<int> transposedCatFeatureIndexes,
+    List<TCatboostCPPExportBinFeatureIndexValue> binarizedFeatureIndexes) {
     TCatboostCPPExportModelCtrBaseHash result = 0;
-    for (const int featureIdx : transposedCatFeatureIndexes) {
-        auto valPtr = &hashedCatFeatures[featureIdx];
-        result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)valPtr[0]);
+    foreach (int featureIdx in transposedCatFeatureIndexes) {
+        var catFeature = hashedCatFeatures[featureIdx];
+        result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)catFeature);
     }
-    for (const auto& binFeatureIndex : binarizedFeatureIndexes) {
-        const unsigned char* binFPtr = &binarizedFeatures[binFeatureIndex.BinIndex];
+    foreach (var binFeatureIndex in binarizedFeatureIndexes) {
+        var binFeature = binarizedFeature[binFeatureIndex.BinIndex]
         if (!binFeatureIndex.CheckValueEqual) {
-            result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)(binFPtr[0] >= binFeatureIndex.Value));
+            result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)(binFeature.Value >= binFeatureIndex.Value));
         } else {
-            result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)(binFPtr[0] == binFeatureIndex.Value));
+            result = CalcHash(result, (TCatboostCPPExportModelCtrBaseHash)(binFeature.Value == binFeatureIndex.Value));
         }
     }
     return result;
 }
 
-static void CalcCtrs(const TCatboostCPPExportModelCtrs& modelCtrs,
-                     const std::vector<unsigned char>& binarizedFeatures,
-                     const std::vector<int>& hashedCatFeatures,
-                     std::vector<float>& result) {
+public static void CalcCtrs(TCatboostCPPExportModelCtrs modelCtrs,
+                      List<byte> binarizedFeatures,
+                      List<int> hashedCatFeatures,
+                      List<float> result) {
     TCatboostCPPExportModelCtrBaseHash ctrHash;
-    size_t resultIdx = 0;
+    long resultIdx = 0;
 
-    for (size_t i = 0; i < modelCtrs.CompressedModelCtrs.size(); ++i) {
-        auto& proj = modelCtrs.CompressedModelCtrs[i].Projection;
+    for (long i = 0; i < modelCtrs.CompressedModelCtrs.count(); ++i) {
+        var proj = modelCtrs.CompressedModelCtrs[i].Projection;
         ctrHash = CalcHash(binarizedFeatures, hashedCatFeatures,
                            proj.transposedCatFeatureIndexes, proj.binarizedIndexes);
-        for (size_t j = 0; j < modelCtrs.CompressedModelCtrs[i].ModelCtrs.size(); ++j) {
-            auto& ctr = modelCtrs.CompressedModelCtrs[i].ModelCtrs[j];
-            auto& learnCtr = modelCtrs.CtrData.LearnCtrs.at(ctr.BaseHash);
-            const ECatboostCPPExportModelCtrType ctrType = ctr.BaseCtrType;
-            const unsigned int* bucketPtr = learnCtr.ResolveHashIndex(ctrHash);
-            if (bucketPtr == NULL) {
+        for (long j = 0; j < modelCtrs.CompressedModelCtrs[i].ModelCtrs.count(); ++j) {
+            var ctr = modelCtrs.CompressedModelCtrs[i].ModelCtrs[j];
+            var learnCtr = modelCtrs.CtrData.LearnCtrs.at(ctr.BaseHash);
+            var ECatboostCPPExportModelCtrType ctrType = ctr.BaseCtrType;
+            var bucket = learnCtr.ResolveHashIndex(ctrHash);
+            if (bucket == null) {
                 result[resultIdx] = ctr.Calc(0.f, 0.f);
             } else {
-                unsigned int bucket = *bucketPtr;
-                if (ctrType == ECatboostCPPExportModelCtrType::BinarizedTargetMeanValue || ctrType == ECatboostCPPExportModelCtrType::FloatTargetMeanValue) {
-                    const TCatboostCPPExportCtrMeanHistory& ctrMeanHistory = learnCtr.CtrMeanHistory[bucket];
+                if (ctrType == ECatboostCPPExportModelCtrType.BinarizedTargetMeanValue || ctrType == ECatboostCPPExportModelCtrType.FloatTargetMeanValue) {
+                    TCatboostCPPExportCtrMeanHistory  ctrMeanHistory = learnCtr.CtrMeanHistory[bucket];
                     result[resultIdx] = ctr.Calc(ctrMeanHistory.Sum, ctrMeanHistory.Count);
-                } else if (ctrType == ECatboostCPPExportModelCtrType::Counter || ctrType == ECatboostCPPExportModelCtrType::FeatureFreq) {
-                    const std::vector<int>& ctrTotal = learnCtr.CtrTotal;
+                } else if (ctrType == ECatboostCPPExportModelCtrType.Counter || ctrType == ECatboostCPPExportModelCtrType.FeatureFreq) {
+                    List<int> ctrTotal = learnCtr.CtrTotal;
                     const int denominator = learnCtr.CounterDenominator;
                     result[resultIdx] = ctr.Calc(ctrTotal[bucket], denominator);
-                } else if (ctrType == ECatboostCPPExportModelCtrType::Buckets) {
-                    auto ctrIntArray = learnCtr.CtrTotal;
+                } else if (ctrType == ECatboostCPPExportModelCtrType.Buckets) {
                     const int targetClassesCount = learnCtr.TargetClassesCount;
                     int goodCount = 0;
                     int totalCount = 0;
-                    int* ctrHistory = ctrIntArray.data() + bucket * targetClassesCount;
-                    goodCount = ctrHistory[ctr.TargetBorderIdx];
+                    var ctrHistory = learnCtr.CtrTotal;
+                    var targetClassesCount = learnCtr.TargetClassesCount
+                    var totalCount = 0;
+                    goodCount = ctrHistory[bucket * targetClassesCount + ctr.TargetBorderIdx ];
                     for (int classId = 0; classId < targetClassesCount; ++classId) {
-                        totalCount += ctrHistory[classId];
+                        totalCount += ctrHistory[bucket * targetClassesCount + classId];
                     }
                     result[resultIdx] = ctr.Calc(goodCount, totalCount);
                 } else {
-                    auto ctrIntArray = learnCtr.CtrTotal;
+                    var ctrHistory = learnCtr.CtrTotal;
                     const int targetClassesCount = learnCtr.TargetClassesCount;
 
                     if (targetClassesCount > 2) {
                         int goodCount = 0;
                         int totalCount = 0;
-                        int* ctrHistory = ctrIntArray.data() + bucket * targetClassesCount;
                         for (int classId = 0; classId < ctr.TargetBorderIdx + 1; ++classId) {
-                            totalCount += ctrHistory[classId];
+                            totalCount += ctrHistory[bucket * targetClassesCount + classId];
                         }
                         for (int classId = ctr.TargetBorderIdx + 1; classId < targetClassesCount; ++classId) {
                             goodCount += ctrHistory[classId];
@@ -80,7 +79,7 @@ static void CalcCtrs(const TCatboostCPPExportModelCtrs& modelCtrs,
                         result[resultIdx] = ctr.Calc(goodCount, totalCount);
                     } else {
                         const int* ctrHistory = &ctrIntArray[bucket * 2];
-                        result[resultIdx] = ctr.Calc(ctrHistory[1], ctrHistory[0] + ctrHistory[1]);
+                        result[resultIdx] = ctr.Calc(ctrHistory[bucket * 2 + 1], ctrHistory[bucket * 2] + ctrHistory[bucket * 2 + 1]);
                     }
                 }
             }

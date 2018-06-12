@@ -1,12 +1,15 @@
 #include "model_exporter.h"
 #include "cpp_exporter.h"
 #include "python_exporter.h"
+#include "csharp_exporter.h"
 
 #include <util/string/builder.h>
 
 namespace NCatboost {
     ICatboostModelExporter* CreateCatboostModelExporter(const TString& modelFile, const EModelType format, const TString& userParametersJSON, bool addFileFormatExtension) {
         switch (format) {
+            case EModelType::CSharp:
+                return new TCatboostModelToCSharpConverter(modelFile, addFileFormatExtension, userParametersJSON);
             case EModelType::CPP:
                 return new TCatboostModelToCppConverter(modelFile, addFileFormatExtension, userParametersJSON);
             case EModelType::Python:

@@ -3,15 +3,15 @@
 #include "model_exporter.h"
 
 namespace NCatboost {
-    class TCatboostModelToCppConverter: public ICatboostModelExporter {
+    class TCatboostModelToCSharpConverter: public ICatboostModelExporter {
     private:
         TOFStream Out;
 
     public:
-        TCatboostModelToCppConverter(const TString& modelFile, bool addFileFormatExtension, const TString& userParametersJSON)
-            : Out(modelFile + (addFileFormatExtension ? ".cpp" : ""))
+        TCatboostModelToCSharpConverter(const TString& modelFile, bool addFileFormatExtension, const TString& userParametersJSON)
+            : Out(modelFile + (addFileFormatExtension ? ".cs" : ""))
         {
-            CB_ENSURE(userParametersJSON.empty(), "JSON user params for exporting the model to C++ are not supported");
+            CB_ENSURE(userParametersJSON.empty(), "JSON user params for exporting the model to CSharp are not supported");
         };
 
         void Write(const TFullModel& model) override {
